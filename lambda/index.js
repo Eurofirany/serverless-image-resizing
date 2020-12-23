@@ -17,11 +17,10 @@ if (process.env.ALLOWED_DIMENSIONS) {
 
 exports.handler = function(event, context, callback) {
   const key = event.queryStringParameters.key;
-  const match = key.match(/((\d+)x(\d+))\/(.*)/);
+  const match = key.match(/((\d+))\/(.*)/);
   const dimensions = match[1];
   const width = parseInt(match[2], 10);
-  const height = parseInt(match[3], 10);
-  const originalKey = match[4];
+  const originalKey = match[3];
 
   if(ALLOWED_DIMENSIONS.size > 0 && !ALLOWED_DIMENSIONS.has(dimensions)) {
      callback(null, {
@@ -32,15 +31,15 @@ exports.handler = function(event, context, callback) {
     return;
   }
 
-  S3.getObject({Bucket: BUCKET, Key: originalKey}).promise()
+  S3.getObject({Bucket: SOURCE_BUCKET, Key: 'PIM/' + originalKey}).promise()
     .then(data => Sharp(data.Body)
-      .resize(width, height)
+      .resize(width)
       .toFormat('png')
       .toBuffer()
     )
     .then(buffer => S3.putObject({
         Body: buffer,
-        Bucket: BUCKET,
+        Bucket: TARGET_BUCKET,
         ContentType: 'image/png',
         Key: key,
       }).promise()
