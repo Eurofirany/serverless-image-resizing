@@ -17,10 +17,11 @@ if (process.env.ALLOWED_DIMENSIONS) {
 
 exports.handler = function(event, context, callback) {
   const key = event.queryStringParameters.key;
-  const match = key.match(/((\d+))\/(.*)/);
-  const dimensions = match[1];
-  const width = parseInt(match[2], 10);
-  const originalKey = match[3];
+  const match = key.split("/");
+  const dimensions = match[0];
+  const width = parseInt(match[0], 10);
+  const sku = match[1];
+  const image = match[2];
 
   if(ALLOWED_DIMENSIONS.size > 0 && !ALLOWED_DIMENSIONS.has(dimensions)) {
      callback(null, {
@@ -31,7 +32,7 @@ exports.handler = function(event, context, callback) {
     return;
   }
 
-  S3.getObject({Bucket: SOURCE_BUCKET, Key: 'PIM/' + originalKey}).promise()
+  S3.getObject({Bucket: SOURCE_BUCKET, Key: 'PIM/product/photos/storage/' + sku + '/' + image}).promise()
     .then(data => Sharp(data.Body)
       .resize(width)
       .toFormat('png')
@@ -41,8 +42,8 @@ exports.handler = function(event, context, callback) {
         Body: buffer,
         Bucket: TARGET_BUCKET,
         ContentType: 'image/png',
-        Key: key,
-      }).promise()
+        Key: sku + '/' + width + '/' + image ,
+      }).promise() ≥i
     )
     .then(() => callback(null, {
         statusCode: '301',
